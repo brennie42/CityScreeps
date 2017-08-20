@@ -11,7 +11,10 @@
         6. Harvester
         7. Police
         8. Upgrader
-
+        
+        
+        
+        
 
 */
 
@@ -114,8 +117,7 @@ var creepsRole = {
                 }
             }
         }
-        else if(!creep.memory.building) {
-            
+        else {
             creepsCommon.getEnergy(creep);
         }
         
@@ -283,7 +285,6 @@ var creepsRole = {
 
 
 
-
     runFixer: function(creep) {
         
         creepsCommon.initCreep(creep);
@@ -307,7 +308,6 @@ var creepsRole = {
                 }
             }
         }
-        
         else {
         creepsCommon.getEnergy(creep);
         }
@@ -346,6 +346,7 @@ var creepsRole = {
                 }
             });
             if(resources.length > 0) {
+                resources.sort((a,b) => a.amount - b.amount)
                 if(creep.pickup(resources[0]) == ERR_NOT_IN_RANGE) {
                     creep.moveTo(resources[0], [5,,])
                 }
@@ -419,42 +420,7 @@ var creepsRole = {
             creep.memory.attackMode = 0
         }
         
-        if(creep.memory.attackMode = 0) {
-            var nearestEnemy = creep.pos.findClosestByPath(FIND_HOSTILE_CREEPS)
-            if(nearestEnemy) {
-                if (nearestEnemy.length > 0) {
-                    creep.memory.idle = false
-                    if (creep.attack(nearestEnemy[0]) == ERR_NOT_IN_RANGE) {
-                        var onRampart = creep.pos.findClosestByRange(FIND_MY_STRUCTURES)
-                        if (creep.pos == onRampart[0].pos){
-                            creep.moveTo(nearestEnemy[0])
-                        }
-                    }
-                }
-                else {
-                    var nearestEnemy = creep.pos.findClosestByPath(FIND_HOSTILE_CONSTRUCTION_SITES)
-                    if (nearestEnemy) {
-                        if (creep.attack(nearestEnemy[0]) == ERR_NOT_IN_RANGE) {
-                            creep.moveTo(nearestEnemy[0])
-                       }
-                    }
-                    else {
-                        var nearestEnemy = creep.pos.findClosestByPath(FIND_HOSTILE_STRUCTURES)
-                        if (nearestEnemy) {
-                            if (creep.attack(nearestEnemy[0]) == ERR_NOT_IN_RANGE) {
-                                creep.moveTo(nearestEnemy[0])
-                            }
-                        }
-                    }
-                }
-            }
-            if(creep.memory.idle) {
-                creep.moveTo(10,25, [5,,])
-                if(creep.pos.isNearTo(10,25)) {
-                    creep.memory.idle = true
-                }
-            }
-        }
+        
         
         var changeRoom = 1
         creep.memory.attackMode = 1;
@@ -529,24 +495,23 @@ var creepsRole = {
         }
         if(!creep.memory.harvesting) {
             var otherHarvesters = creep.room.find(FIND_MY_CREEPS, {
-                filter: (other) => other.memory.role == 'harvester'
+                filter: (other) => (other.memory.role == 'harvester' &&
+                                    other.name !== creep.name)
             });
             if(otherHarvesters.length > 0) {
-                otherHarvesters.sort((a,b) => {return (b.memory.sourceNo - a.memory.sourceNo)});
-                creep.memory.sourceNo = (otherHarvesters[0].memory.sourceNo + 1)
-                if(creep.memory.sourceNo >= sources.length) {
-                    otherHarvesters.sort((a,b) => {return (b.memory.sourceNo - a.memory.sourceNo)});
-                    if(!otherHarvesters[0].memory.sourceNo == 0) {
-                        creep.memory.sourceNo = 0;
-                        creep.memory.harvesting = true;
-                    }
-                    else {
-                        console.log(creep.name +' cant find an unused source!');
+                otherHarvesters.sort((b,a) => {return (b.memory.sourceNo - a.memory.sourceNo)});
+                for(var i = 0; i < otherHarvesters.length; i++) {
+                    if(otherHarvesters[i].memory.sourceNo == creep.memory.sourceNo){
+                        creep.memory.sourceNo = otherHarvesters[i].memory.sourceNo + 1;
+                        if(creep.memory.sourceNo >= sources.length) {
+                            if(!otherHarvesters[0].memory.sourceNo == 0) {
+                                creep.memory.sourceNo = 0;
+                                creep.memory.harvesting = true;
+                            }
+                        }
                     }
                 }
-                else {
-                    creep.memory.harvesting = true;
-                }
+                creep.memory.harvesting = true;
             }
             else if(otherHarvesters.length == 0) {
                 creep.memory.harvesting = true;
@@ -565,6 +530,76 @@ var creepsRole = {
     
     runPolice: function(creep) {
         
+        creepsCommon.initCreep(creep);
+        
+        if(!creep.memory.job) {
+            var keeperLairs = creep.room.find(FIND_STRUCTURES, {
+                filter: (other) => other.structureType == STRUCTURE_KEEPER_LAIR
+            });
+            if(keeperLairs) {
+                creep.memory.lairNo = 0
+                var otherPolice = creep.room.find(FIND_MY_CREEPS, {
+                    filter: (other) => (other.memory.role == 'police' &&
+                                        other.name !== creep.name)
+                });
+                if(otherPolice) {
+                    otherPolice.sort((b,a) => {return (b.memory.lairNo - a.memory.lairNo)});
+                    for(var i = 0; i < otherPolice.length; i++) {
+                        if(otherPolice[i].memory.lairNo == creep.memory.lairNo){
+                            creep.memory.lairNo = otherPolice[i].memory.lairNo + 1;
+                            if(creep.memory.lairNo >= keeperLairs.length) {
+                                creep.memory.job = 1;
+                            }
+                            else {
+                                creep.memory.job = 2;
+                                creep.memory.lairID = keeperLairs[creep.memory.lairNo].id;
+                            }
+                        }
+                    }
+                }
+                
+            }
+        }
+        
+        if(creep.memory.job == 1) {
+            var nearestEnemy = creep.pos.findClosestByRange(FIND_HOSTILE_CREEPS)
+            if(nearestEnemy) {
+                if (nearestEnemy.length > 0) {
+                    creep.memory.idle = false
+                    if (creep.attack(nearestEnemy[0]) == ERR_NOT_IN_RANGE) {
+                        var onRampart = creep.pos.findClosestByRange(FIND_MY_STRUCTURES, {
+                            filter: (other) => other.structureType == STRUCTURE_RAMPART
+                        });
+                        if (creep.pos !== onRampart[0].pos) {
+                            creep.moveTo(nearestEnemy[0]);
+                        }
+                    }
+                }
+            }
+            else {
+                creep.moveTo(10,25, [5,,])
+            }
+        }
+        
+        if(creep.memory.job == 2) { 
+            if(!creep.pos.isNearTo(Game.getObjectById(creep.memory.lairID))) { 
+                creep.moveTo(Game.getObjectById(creep.memory.lairID));
+            }
+            var hostiles = creep.room.find(FIND_HOSTILE_CREEPS);
+            if(hostiles.length > 0) {
+                hostiles.sort((a,b) => a.pos.getRangeTo(creep) - b.pos.getRangeTo(creep))
+                if(creep.pos.getRangeTo(hostiles[0]) < 4) {
+                    creep.rangedAttack(hostiles[0]);
+                }
+            }
+            if(creep.hits < creep.hitsMax) {
+                if(!creep.room.find(FIND_CREEPS, {filter: (other) => other.my == false})) {
+                    if(!Game.getObjectById(creep.memory.homeSpawnID).recycleCreep(creep)) {
+                        creep.moveTo(Game.getObjectById(creep.memory.homeSpawnID))
+                    }
+                }
+            }
+        }
     },
 
 
