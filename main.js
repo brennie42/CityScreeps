@@ -1,5 +1,5 @@
 /*
-    CityScreeps
+    CityScreeps 0.6
     
     Every Creep has it's Place and Time.
     Every Spawner has it's Room.
@@ -9,32 +9,37 @@
         
         Original Code by Tinglatio
         
-    Things to do:
-        Add creep renewal functionality when they get big
-        Work on autobuild and Site Search functionality
-        Better Combat??
  */
 
     //Module Imports
 var roomSpawn = require('room.spawn');
 var roomImprove = require('room.improve');
-var roleHarvester = require('role.harvester');
-var roleDistributor = require('role.distributor');
-var roleGatherer = require('role.gatherer');
-var roleUpgrader = require('role.upgrader');
-var roleBuilder = require('role.builder');
-var roleGrunt = require('role.grunt');
-var roleFixer = require('role.fixer');
+var creepsRole = require('creeps.role');
 
 module.exports.loop = function () {
 
     //Log Whitespace ( ＾∇＾)
         console.log(' ');
+    
+    
+    //Clear Defunct Memory Objects
+    for(var name in Memory.creeps) {
+        if(Game.creeps[name]) {
+        }
+        else {
+            Memory.creeps[name].dedTime = Memory.creeps[name].dedTime + 1;
+            if (Memory.creeps[name].dedTime > 5) {
+                delete Memory.creeps[name];
+                console.log('Clearing non-existing creep memory:', name);
+            }
+        }
+    }
+
 
     for(var name in Game.spawns) {
         var spawn = Game.spawns[name];
-        roomSpawn.run(spawn);
-        roomImprove.run(spawn);
+        roomSpawn.spawnCreeps(spawn);
+        roomSpawn.planImprovement(spawn);
     }
     
     
@@ -70,27 +75,29 @@ module.exports.loop = function () {
     for(var name in Game.creeps) {
         var creep = Game.creeps[name];
         if(creep.memory.role == 'harvester') {
-            roleHarvester.run(creep);
+            creepsRole.runHarvester(creep);
         }
         if(creep.memory.role == 'gatherer') {
-            roleGatherer.run(creep);
+            creepsRole.runGatherer(creep);
         }
         if(creep.memory.role == 'distributor') {
-            roleDistributor.run(creep);
+            creepsRole.runDistributor(creep);
         }
         if(creep.memory.role == 'upgrader') {
-            roleUpgrader.run(creep);
+            creepsRole.runUpgrader(creep);
         }
         if(creep.memory.role == 'builder') {
-            roleBuilder.run(creep);
+            creepsRole.runBuilder(creep);
         }
         if(creep.memory.role == 'fixer') {
-            roleFixer.run(creep);
+            creepsRole.runFixer(creep);
         }
         if(creep.memory.role == 'grunt') {
-            roleGrunt.run(creep);
+            creepsRole.runGrunt(creep);
         }
     }
+    
+    
     
     
 }

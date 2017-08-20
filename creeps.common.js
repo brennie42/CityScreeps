@@ -4,9 +4,19 @@
 
  */
 
-// For general use functions 
+var creepsCommon = {
+    
+    initCreep: function(creep) {
+        
+        if(!creep.memory.initSuccess) {
+            var homeSpawn = creep.room.find(FIND_MY_SPAWNS);
+            creep.memory.homeSpawnID = homeSpawn[0].id
+            
+            creep.memory.initSuccess = true
+        }
+    },
 
-var getEnergy = {
+
 
     getEnergy: function(creep) {
         
@@ -24,12 +34,35 @@ var getEnergy = {
             }
         }
         else {
-            var resources = creep.room.find(FIND_DROPPED_ENERGY);
-            if(resources.length > 0) {
-                if(creep.pickup(resources[0]) == ERR_NOT_IN_RANGE) {
-                    creep.moveTo(resources[0], [5,,])
+            var sources = creep.room.find(FIND_DROPPED_ENERGY);
+            if(sources.length > 0) {
+                sources.sort((b,a) => a.amount - b.amount)
+                if(creep.pickup(sources[0]) == ERR_NOT_IN_RANGE) {
+                    creep.moveTo(sources[0], [5,,])
                 }
             }
+        }
+    },
+
+
+
+    
+    renewTTL: function(creep) {
+        
+        var homeSpawn = Game.getObjectById(creep.memory.homeSpawnID)
+        
+        if(creep.hits > 1499) {
+            if(creep.ticksToLive < 100 || creep.memory.renewing) {
+                console.log(creep.cancelOrder('move'))
+                creep.memory.renewing = true
+                if(homeSpawn.renewCreep(creep) == ERR_NOT_IN_RANGE) {
+                    creep.moveTo(homeSpawn)
+                }
+            }
+        }
+        
+        if(creep.ticksToLive > 1400) {
+            creep.memory.renewing = false
         }
     }
 };
@@ -40,6 +73,4 @@ var getEnergy = {
 
 
 
-
-
-module.exports = getEnergy;
+module.exports = creepsCommon;
