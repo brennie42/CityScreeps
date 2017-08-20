@@ -211,6 +211,8 @@ var roomSpawn = {
 
     planImprovement: function(spawn) {
         
+        
+        
         /*
             Spawn complex plan:
             
@@ -257,6 +259,176 @@ var roomSpawn = {
         }
         if(!spawn.room.memory.auxillaryPlanned) {
             spawn.room.memory.auxillaryPlanned = 0;
+        }
+        
+        
+        if(spawn.room.controller.level >= 1 && spawn.room.memory.auxillaryPlanned == 0) {
+        //Find location for auxillary complex -- This runs every tick until the entire room has been searched
+            if(!spawn.memory.auxSearchIndex) {
+                spawn.memory.auxSearchIndex = 0
+            }
+            
+            var auxSearchFlag = Game.flags.auxSearchFlag;
+            var auxSearchFlag2 = Game.flags.auxSearchFlag2;
+            if(!auxSearchFlag) {
+                spawn.room.createFlag(25 , 25 , 'auxSearchFlag' , COLOR_ORANGE , COLOR_YELLOW);
+                spawn.room.createFlag(25,25,'auxSearchFlag2',COLOR_RED,COLOR_YELLOW)
+            }
+            
+            if(auxSearchFlag) {
+                var elseTest = 0
+                if(!auxSearchFlag.memory.legConst) {
+                    auxSearchFlag.memory.legConst = 1
+                }
+                if(!auxSearchFlag.memory.distToGo) {
+                    auxSearchFlag.memory.distToGo = 1
+                }
+                if(!auxSearchFlag.memory.direction) {
+                    auxSearchFlag.memory.direction = 3
+                }
+                if(!auxSearchFlag2.memory.legConst) {
+                    auxSearchFlag2.memory.legConst = 1
+                }
+                if(!auxSearchFlag2.memory.distToGo) {
+                    auxSearchFlag2.memory.distToGo = 1
+                }
+                if(!auxSearchFlag2.memory.direction) {
+                    auxSearchFlag2.memory.direction = 3
+                }
+                if(!auxSearchFlag2.memory.moves) {
+                    auxSearchFlag2.memory.moves = 0
+                }
+                
+                if(!auxSearchFlag.memory.searchStarted) {
+                    auxSearchFlag.memory.searchStarted = true
+                    auxSearchFlag.memory.moveArea = 0
+                    
+                }
+                
+                if(auxSearchFlag.memory.moveArea == 1) {
+                    if(auxSearchFlag.memory.distToGo > 0) {
+                        if(auxSearchFlag.memory.direction == 1) {
+                            auxSearchFlag.setPosition(auxSearchFlag.pos.x,auxSearchFlag.pos.y - 1)
+                            auxSearchFlag.memory.moveArea = 0
+                            auxSearchFlag.memory.distToGo = auxSearchFlag.memory.distToGo - 1
+                            auxSearchFlag2.setPosition(auxSearchFlag.pos.x , auxSearchFlag.pos.y - 1)
+                        }
+                        if(auxSearchFlag.memory.direction == 3) {
+                            auxSearchFlag.setPosition(auxSearchFlag.pos.x + 1,auxSearchFlag.pos.y)
+                            auxSearchFlag.memory.moveArea = 0
+                            auxSearchFlag.memory.distToGo = auxSearchFlag.memory.distToGo - 1
+                            auxSearchFlag2.setPosition(auxSearchFlag.pos.x + 1, auxSearchFlag.pos.y)
+                        }
+                        if(auxSearchFlag.memory.direction == 5) {
+                            auxSearchFlag.setPosition(auxSearchFlag.pos.x,auxSearchFlag.pos.y + 1)
+                            auxSearchFlag.memory.moveArea = 0
+                            auxSearchFlag.memory.distToGo = auxSearchFlag.memory.distToGo - 1
+                            auxSearchFlag2.setPosition(auxSearchFlag.pos.x , auxSearchFlag.pos.y + 1)
+                        }
+                        if(auxSearchFlag.memory.direction == 7) {
+                            auxSearchFlag.setPosition(auxSearchFlag.pos.x - 1,auxSearchFlag.pos.y)
+                            auxSearchFlag.memory.moveArea = 0
+                            auxSearchFlag.memory.distToGo = auxSearchFlag.memory.distToGo - 1
+                            auxSearchFlag2.setPosition(auxSearchFlag.pos.x - 1, auxSearchFlag.pos.y)
+                        }
+                    }
+                    if(auxSearchFlag.memory.distToGo == 0) {
+                        if(auxSearchFlag.memory.direction == 1) {
+                            auxSearchFlag.memory.legConst = auxSearchFlag.memory.legConst + 1
+                            auxSearchFlag.memory.distToGo = auxSearchFlag.memory.legConst
+                            auxSearchFlag.memory.direction = 3
+                        }
+                        else if(auxSearchFlag.memory.direction == 3) {
+                            auxSearchFlag.memory.distToGo = auxSearchFlag.memory.legConst
+                            auxSearchFlag.memory.direction = 5
+                        }
+                        else if(auxSearchFlag.memory.direction == 5) {
+                            auxSearchFlag.memory.legConst = auxSearchFlag.memory.legConst + 1
+                            auxSearchFlag.memory.distToGo = auxSearchFlag.memory.legConst
+                            auxSearchFlag.memory.direction = 7
+                        }
+                        else if(auxSearchFlag.memory.direction == 7) {
+                            auxSearchFlag.memory.distToGo = auxSearchFlag.memory.legConst
+                            auxSearchFlag.memory.direction = 1
+                        }
+                    }
+                    spawn.memory.auxSearchIndex = spawn.memory.auxSearchIndex + 1
+                    auxSearchFlag2.memory.moves = 0
+                    auxSearchFlag2.memory.distToGo = 1
+                    auxSearchFlag2.memory.legConst = 1
+                    auxSearchFlag2.memory.direction = 3
+                    elseTest = 1
+                }
+                
+                if(auxSearchFlag.memory.moveArea == 0 && elseTest == 0) {
+                    var stuffHere = auxSearchFlag2.room.lookAt(auxSearchFlag2.pos)
+                    for(var i = 0; i < stuffHere.length; i++) {
+                        if(stuffHere[i]['type'] == 'terrain') {
+                            if(stuffHere[i]['terrain'] == 'wall') {
+                                auxSearchFlag.memory.moveArea = 1
+                            }
+                        }
+                        if(stuffHere[i]['type'] == 'structure') {
+                            auxSearchFlag.memory.moveArea = 1
+                        }
+                        if(stuffHere[i]['type'] == 'constructionSite') {
+                            auxSearchFlag.memory.moveArea = 1
+                        }
+                    }
+                    if(auxSearchFlag.memory.moveArea == 0) {
+                        auxSearchFlag2.memory.moves = auxSearchFlag2.memory.moves + 1
+                        if(auxSearchFlag2.memory.moves > 81) {
+                            spawn.room.createFlag(auxSearchFlag.pos.x,auxSearchFlag.pos.y,'AuxillaryComplex',COLOR_YELLOW,COLOR_GREY);
+                            Game.flags.auxSearchFlag.remove();
+                            Game.flags.auxSearchFlag2.remove();
+                            spawn.room.memory.auxillaryPlanned = 1;
+                        }
+                    }
+                    if(auxSearchFlag2.memory.distToGo > 0) {
+                        if(auxSearchFlag2.memory.direction == 1) {
+                            auxSearchFlag2.setPosition(auxSearchFlag2.pos.x , auxSearchFlag2.pos.y - 1)
+                            auxSearchFlag2.memory.distToGo = auxSearchFlag2.memory.distToGo - 1
+                        }
+                        if(auxSearchFlag2.memory.direction == 3) {
+                            auxSearchFlag2.setPosition(auxSearchFlag2.pos.x + 1 , auxSearchFlag2.pos.y)
+                            auxSearchFlag2.memory.distToGo = auxSearchFlag2.memory.distToGo - 1
+                        }
+                        if(auxSearchFlag2.memory.direction == 5) {
+                            auxSearchFlag2.setPosition(auxSearchFlag2.pos.x , auxSearchFlag2.pos.y + 1)
+                            auxSearchFlag2.memory.distToGo = auxSearchFlag2.memory.distToGo - 1
+                        }
+                        if(auxSearchFlag2.memory.direction == 7) {
+                            auxSearchFlag2.setPosition(auxSearchFlag2.pos.x - 1 , auxSearchFlag2.pos.y)
+                            auxSearchFlag2.memory.distToGo = auxSearchFlag2.memory.distToGo - 1
+                        }
+                    }
+                    if(auxSearchFlag2.memory.distToGo == 0) {
+                        var turning = 1
+                        if(auxSearchFlag2.memory.direction == 1 && turning == 1) {
+                            auxSearchFlag2.memory.legConst = auxSearchFlag2.memory.legConst + 1
+                            auxSearchFlag2.memory.distToGo = auxSearchFlag2.memory.legConst
+                            auxSearchFlag2.memory.direction = 3
+                            turning = 0
+                        }
+                        if(auxSearchFlag2.memory.direction == 3 && turning == 1) {
+                            auxSearchFlag2.memory.distToGo = auxSearchFlag2.memory.legConst
+                            auxSearchFlag2.memory.direction = 5
+                            turning = 0
+                        }
+                        if(auxSearchFlag2.memory.direction == 5 && turning == 1) {
+                            auxSearchFlag2.memory.legConst = auxSearchFlag2.memory.legConst + 1
+                            auxSearchFlag2.memory.distToGo = auxSearchFlag2.memory.legConst
+                            auxSearchFlag2.memory.direction = 7
+                            turning = 0
+                        }
+                        if(auxSearchFlag2.memory.direction == 7 && turning == 1) {
+                            auxSearchFlag2.memory.distToGo = auxSearchFlag2.memory.legConst
+                            auxSearchFlag2.memory.direction = 1
+                            turning = 0
+                        }
+                    }
+                }
+            }
         }
         
         if(spawn.room.controller.level == 1 && spawn.room.memory.levelPlanned == 0) {
@@ -309,8 +481,68 @@ var roomSpawn = {
             
             spawn.room.createConstructionSite((spawn.pos.x + 3), (spawn.pos.y + 3), STRUCTURE_ROAD);
             
+            
             //Set memory to Done
             spawn.room.memory.levelPlanned = 2;
+        }
+        
+        if(spawn.room.controller.level >= 2 && spawn.room.memory.auxillaryPlanned == 1) {
+            //Create Auxillary Complex Roads
+            spawn.room.createConstructionSite((Game.flags.AuxillaryComplex.pos.x + 1), (Game.flags.AuxillaryComplex.pos.y + 0), STRUCTURE_ROAD);
+            spawn.room.createConstructionSite((Game.flags.AuxillaryComplex.pos.x + 0), (Game.flags.AuxillaryComplex.pos.y + 1), STRUCTURE_ROAD);
+            spawn.room.createConstructionSite((Game.flags.AuxillaryComplex.pos.x - 1), (Game.flags.AuxillaryComplex.pos.y + 0), STRUCTURE_ROAD);
+            spawn.room.createConstructionSite((Game.flags.AuxillaryComplex.pos.x + 0), (Game.flags.AuxillaryComplex.pos.y - 1), STRUCTURE_ROAD);
+            
+            spawn.room.createConstructionSite((Game.flags.AuxillaryComplex.pos.x + 3), (Game.flags.AuxillaryComplex.pos.y + 0), STRUCTURE_ROAD);
+            spawn.room.createConstructionSite((Game.flags.AuxillaryComplex.pos.x + 2), (Game.flags.AuxillaryComplex.pos.y + 1), STRUCTURE_ROAD);
+            spawn.room.createConstructionSite((Game.flags.AuxillaryComplex.pos.x + 1), (Game.flags.AuxillaryComplex.pos.y + 2), STRUCTURE_ROAD);
+            
+            spawn.room.createConstructionSite((Game.flags.AuxillaryComplex.pos.x - 0), (Game.flags.AuxillaryComplex.pos.y + 3), STRUCTURE_ROAD);
+            spawn.room.createConstructionSite((Game.flags.AuxillaryComplex.pos.x - 1), (Game.flags.AuxillaryComplex.pos.y + 2), STRUCTURE_ROAD);
+            spawn.room.createConstructionSite((Game.flags.AuxillaryComplex.pos.x - 2), (Game.flags.AuxillaryComplex.pos.y + 1), STRUCTURE_ROAD);
+            
+            spawn.room.createConstructionSite((Game.flags.AuxillaryComplex.pos.x - 3), (Game.flags.AuxillaryComplex.pos.y - 0), STRUCTURE_ROAD);
+            spawn.room.createConstructionSite((Game.flags.AuxillaryComplex.pos.x - 2), (Game.flags.AuxillaryComplex.pos.y - 1), STRUCTURE_ROAD);
+            spawn.room.createConstructionSite((Game.flags.AuxillaryComplex.pos.x - 1), (Game.flags.AuxillaryComplex.pos.y - 2), STRUCTURE_ROAD);
+            
+            spawn.room.createConstructionSite((Game.flags.AuxillaryComplex.pos.x + 0), (Game.flags.AuxillaryComplex.pos.y - 3), STRUCTURE_ROAD);
+            spawn.room.createConstructionSite((Game.flags.AuxillaryComplex.pos.x + 1), (Game.flags.AuxillaryComplex.pos.y - 2), STRUCTURE_ROAD);
+            spawn.room.createConstructionSite((Game.flags.AuxillaryComplex.pos.x + 2), (Game.flags.AuxillaryComplex.pos.y - 1), STRUCTURE_ROAD);
+            
+            spawn.room.createConstructionSite((Game.flags.AuxillaryComplex.pos.x + 4), (Game.flags.AuxillaryComplex.pos.y + 1), STRUCTURE_ROAD);
+            spawn.room.createConstructionSite((Game.flags.AuxillaryComplex.pos.x + 3), (Game.flags.AuxillaryComplex.pos.y + 2), STRUCTURE_ROAD);
+            spawn.room.createConstructionSite((Game.flags.AuxillaryComplex.pos.x + 2), (Game.flags.AuxillaryComplex.pos.y + 3), STRUCTURE_ROAD);
+            spawn.room.createConstructionSite((Game.flags.AuxillaryComplex.pos.x + 1), (Game.flags.AuxillaryComplex.pos.y + 4), STRUCTURE_ROAD);
+            
+            spawn.room.createConstructionSite((Game.flags.AuxillaryComplex.pos.x - 1), (Game.flags.AuxillaryComplex.pos.y + 4), STRUCTURE_ROAD);
+            spawn.room.createConstructionSite((Game.flags.AuxillaryComplex.pos.x - 2), (Game.flags.AuxillaryComplex.pos.y + 3), STRUCTURE_ROAD);
+            spawn.room.createConstructionSite((Game.flags.AuxillaryComplex.pos.x - 3), (Game.flags.AuxillaryComplex.pos.y + 2), STRUCTURE_ROAD);
+            spawn.room.createConstructionSite((Game.flags.AuxillaryComplex.pos.x - 4), (Game.flags.AuxillaryComplex.pos.y + 1), STRUCTURE_ROAD);
+            
+            spawn.room.createConstructionSite((Game.flags.AuxillaryComplex.pos.x - 4), (Game.flags.AuxillaryComplex.pos.y - 1), STRUCTURE_ROAD);
+            spawn.room.createConstructionSite((Game.flags.AuxillaryComplex.pos.x - 3), (Game.flags.AuxillaryComplex.pos.y - 2), STRUCTURE_ROAD);
+            spawn.room.createConstructionSite((Game.flags.AuxillaryComplex.pos.x - 2), (Game.flags.AuxillaryComplex.pos.y - 3), STRUCTURE_ROAD);
+            spawn.room.createConstructionSite((Game.flags.AuxillaryComplex.pos.x - 1), (Game.flags.AuxillaryComplex.pos.y - 4), STRUCTURE_ROAD);
+            
+            spawn.room.createConstructionSite((Game.flags.AuxillaryComplex.pos.x + 1), (Game.flags.AuxillaryComplex.pos.y - 4), STRUCTURE_ROAD);
+            spawn.room.createConstructionSite((Game.flags.AuxillaryComplex.pos.x + 2), (Game.flags.AuxillaryComplex.pos.y - 3), STRUCTURE_ROAD);
+            spawn.room.createConstructionSite((Game.flags.AuxillaryComplex.pos.x + 3), (Game.flags.AuxillaryComplex.pos.y - 2), STRUCTURE_ROAD);
+            spawn.room.createConstructionSite((Game.flags.AuxillaryComplex.pos.x + 4), (Game.flags.AuxillaryComplex.pos.y - 1), STRUCTURE_ROAD);
+            
+            spawn.room.createConstructionSite((Game.flags.AuxillaryComplex.pos.x + 4), (Game.flags.AuxillaryComplex.pos.y + 3), STRUCTURE_ROAD);
+            spawn.room.createConstructionSite((Game.flags.AuxillaryComplex.pos.x + 3), (Game.flags.AuxillaryComplex.pos.y + 4), STRUCTURE_ROAD);
+            
+            spawn.room.createConstructionSite((Game.flags.AuxillaryComplex.pos.x - 3), (Game.flags.AuxillaryComplex.pos.y + 4), STRUCTURE_ROAD);
+            spawn.room.createConstructionSite((Game.flags.AuxillaryComplex.pos.x - 4), (Game.flags.AuxillaryComplex.pos.y + 3), STRUCTURE_ROAD);
+            
+            spawn.room.createConstructionSite((Game.flags.AuxillaryComplex.pos.x - 4), (Game.flags.AuxillaryComplex.pos.y - 3), STRUCTURE_ROAD);
+            spawn.room.createConstructionSite((Game.flags.AuxillaryComplex.pos.x - 3), (Game.flags.AuxillaryComplex.pos.y - 4), STRUCTURE_ROAD);
+            
+            spawn.room.createConstructionSite((Game.flags.AuxillaryComplex.pos.x + 3), (Game.flags.AuxillaryComplex.pos.y - 4), STRUCTURE_ROAD);
+            spawn.room.createConstructionSite((Game.flags.AuxillaryComplex.pos.x + 4), (Game.flags.AuxillaryComplex.pos.y - 3), STRUCTURE_ROAD);
+            
+            //Set memory to Done
+            spawn.room.memory.auxillaryPlanned = 2
         }
         
         if(spawn.room.controller.level == 3 && spawn.room.memory.levelPlanned == 2) {
@@ -342,17 +574,89 @@ var roomSpawn = {
             //Set memory to Done
             spawn.room.memory.levelPlanned = 4;
         }
-        /*
-        if(spawn.room.controller.level >= 4 && spawn.room.memory.auxillaryPlanned == 0) {
-            //Find location for auxillary complex
-            if(!spawn.memory.auxSearchIndex) {
-                spawn.memory.auxSearchIndex = 0
-            }
-            auxSearchFlag = spawn.room.find()
-            if()
-            spawn.room.createFlag()
+        
+        if(spawn.room.controller.level == 4 && spawn.room.memory.auxillaryPlanned == 2) {
+            //Create the Storage for the Auxillary Complex
+            spawn.room.createConstructionSite(Game.flags.AuxillaryComplex.pos.x,Game.flags.AuxillaryComples.pos.y, STRUCTURE_STORAGE)
+            
+            //Remove the AuxillaryComplex flag
+            Game.flags.AuxillaryComplex.remove()
+            
+            //Set memory to Done
+            spawn.room.memory.auxillaryPlanned = 3
         }
-        */
+        
+        if(spawn.room.controller.level == 5 && spawn.room.memory.levelPlanned == 4) {
+            //Create Sites for the First layer of auxillary extensions
+            spawn.room.createConstructionSite((spawn.room.storage.pos.x + 0), (spawn.room.storage.pos.y - 4), STRUCTURE_EXTENSION);
+            spawn.room.createConstructionSite((spawn.room.storage.pos.x + 0), (spawn.room.storage.pos.y - 2), STRUCTURE_EXTENSION);
+            spawn.room.createConstructionSite((spawn.room.storage.pos.x + 1), (spawn.room.storage.pos.y - 3), STRUCTURE_EXTENSION);
+            spawn.room.createConstructionSite((spawn.room.storage.pos.x + 1), (spawn.room.storage.pos.y - 1), STRUCTURE_EXTENSION);
+            spawn.room.createConstructionSite((spawn.room.storage.pos.x + 2), (spawn.room.storage.pos.y - 2), STRUCTURE_EXTENSION);
+            
+            spawn.room.createConstructionSite((spawn.room.storage.pos.x + 2), (spawn.room.storage.pos.y - 4), STRUCTURE_EXTENSION);
+            spawn.room.createConstructionSite((spawn.room.storage.pos.x + 3), (spawn.room.storage.pos.y - 3), STRUCTURE_EXTENSION);
+            spawn.room.createConstructionSite((spawn.room.storage.pos.x + 4), (spawn.room.storage.pos.y - 4), STRUCTURE_EXTENSION);
+            spawn.room.createConstructionSite((spawn.room.storage.pos.x + 4), (spawn.room.storage.pos.y - 2), STRUCTURE_EXTENSION);
+            spawn.room.createConstructionSite((spawn.room.storage.pos.x + 3), (spawn.room.storage.pos.y - 1), STRUCTURE_EXTENSION);
+            
+            //Set memory to Done
+            spawn.room.memory.levelPlanned = 5;
+        }
+        
+        if(spawn.room.controller.level == 6 && spawn.room.memory.levelPlanned == 5) {
+            //Create Sites for the First layer of auxillary extensions
+            spawn.room.createConstructionSite((spawn.room.storage.pos.x + 4), (spawn.room.storage.pos.y + 0), STRUCTURE_EXTENSION);
+            spawn.room.createConstructionSite((spawn.room.storage.pos.x + 2), (spawn.room.storage.pos.y + 0), STRUCTURE_EXTENSION);
+            spawn.room.createConstructionSite((spawn.room.storage.pos.x + 3), (spawn.room.storage.pos.y + 1), STRUCTURE_EXTENSION);
+            spawn.room.createConstructionSite((spawn.room.storage.pos.x + 1), (spawn.room.storage.pos.y + 1), STRUCTURE_EXTENSION);
+            spawn.room.createConstructionSite((spawn.room.storage.pos.x + 2), (spawn.room.storage.pos.y + 2), STRUCTURE_EXTENSION);
+            
+            spawn.room.createConstructionSite((spawn.room.storage.pos.x + 4), (spawn.room.storage.pos.y + 2), STRUCTURE_EXTENSION);
+            spawn.room.createConstructionSite((spawn.room.storage.pos.x + 3), (spawn.room.storage.pos.y + 3), STRUCTURE_EXTENSION);
+            spawn.room.createConstructionSite((spawn.room.storage.pos.x + 4), (spawn.room.storage.pos.y + 4), STRUCTURE_EXTENSION);
+            spawn.room.createConstructionSite((spawn.room.storage.pos.x + 2), (spawn.room.storage.pos.y + 4), STRUCTURE_EXTENSION);
+            spawn.room.createConstructionSite((spawn.room.storage.pos.x + 1), (spawn.room.storage.pos.y + 3), STRUCTURE_EXTENSION);
+            
+            //Set memory to Done
+            spawn.room.memory.levelPlanned = 6;
+        }
+        
+        if(spawn.room.controller.level == 7 && spawn.room.memory.levelPlanned == 6) {
+            //Create Sites for the First layer of auxillary extensions
+            spawn.room.createConstructionSite((spawn.room.storage.pos.x - 0), (spawn.room.storage.pos.y + 4), STRUCTURE_EXTENSION);
+            spawn.room.createConstructionSite((spawn.room.storage.pos.x - 0), (spawn.room.storage.pos.y + 2), STRUCTURE_EXTENSION);
+            spawn.room.createConstructionSite((spawn.room.storage.pos.x - 1), (spawn.room.storage.pos.y + 3), STRUCTURE_EXTENSION);
+            spawn.room.createConstructionSite((spawn.room.storage.pos.x - 1), (spawn.room.storage.pos.y + 1), STRUCTURE_EXTENSION);
+            spawn.room.createConstructionSite((spawn.room.storage.pos.x - 2), (spawn.room.storage.pos.y + 2), STRUCTURE_EXTENSION);
+            
+            spawn.room.createConstructionSite((spawn.room.storage.pos.x - 2), (spawn.room.storage.pos.y + 4), STRUCTURE_EXTENSION);
+            spawn.room.createConstructionSite((spawn.room.storage.pos.x - 3), (spawn.room.storage.pos.y + 3), STRUCTURE_EXTENSION);
+            spawn.room.createConstructionSite((spawn.room.storage.pos.x - 4), (spawn.room.storage.pos.y + 4), STRUCTURE_EXTENSION);
+            spawn.room.createConstructionSite((spawn.room.storage.pos.x - 4), (spawn.room.storage.pos.y + 2), STRUCTURE_EXTENSION);
+            spawn.room.createConstructionSite((spawn.room.storage.pos.x - 3), (spawn.room.storage.pos.y + 1), STRUCTURE_EXTENSION);
+            
+            //Set memory to Done
+            spawn.room.memory.levelPlanned = 7;
+        }
+        
+        if(spawn.room.controller.level == 8 && spawn.room.memory.levelPlanned == 7) {
+            //Create Sites for the First layer of auxillary extensions
+            spawn.room.createConstructionSite((spawn.room.storage.pos.x - 4), (spawn.room.storage.pos.y - 0), STRUCTURE_EXTENSION);
+            spawn.room.createConstructionSite((spawn.room.storage.pos.x - 2), (spawn.room.storage.pos.y - 0), STRUCTURE_EXTENSION);
+            spawn.room.createConstructionSite((spawn.room.storage.pos.x - 3), (spawn.room.storage.pos.y - 1), STRUCTURE_EXTENSION);
+            spawn.room.createConstructionSite((spawn.room.storage.pos.x - 1), (spawn.room.storage.pos.y - 1), STRUCTURE_EXTENSION);
+            spawn.room.createConstructionSite((spawn.room.storage.pos.x - 2), (spawn.room.storage.pos.y - 2), STRUCTURE_EXTENSION);
+            
+            spawn.room.createConstructionSite((spawn.room.storage.pos.x - 4), (spawn.room.storage.pos.y - 2), STRUCTURE_EXTENSION);
+            spawn.room.createConstructionSite((spawn.room.storage.pos.x - 3), (spawn.room.storage.pos.y - 3), STRUCTURE_EXTENSION);
+            spawn.room.createConstructionSite((spawn.room.storage.pos.x - 4), (spawn.room.storage.pos.y - 4), STRUCTURE_EXTENSION);
+            spawn.room.createConstructionSite((spawn.room.storage.pos.x - 2), (spawn.room.storage.pos.y - 4), STRUCTURE_EXTENSION);
+            spawn.room.createConstructionSite((spawn.room.storage.pos.x - 1), (spawn.room.storage.pos.y - 3), STRUCTURE_EXTENSION);
+            
+            //Set memory to Done
+            spawn.room.memory.levelPlanned = 8;
+        }
     }
 };
 
