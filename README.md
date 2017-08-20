@@ -6,3 +6,12 @@ TO DO:
     Define Police creep with defense in mind
     Relate Distributor number to the Distance and Number of Sources
     DEBUG HARVESTERS??? (testing needed)
+        
+        
+Changelog (0.8 and later)
+    0.8
+        
+    
+    0.7
+        Added Police creep
+        Other things...
