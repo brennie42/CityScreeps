@@ -19,7 +19,7 @@ var roomImprove = require('room.improve');
 var creepsRole = require('creeps.role');
 
 module.exports.loop = function (){
-
+    
     //Log Whitespace ( ＾∇＾)
         console.log(' ');
     

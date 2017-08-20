@@ -47,22 +47,24 @@ var creepsCommon = {
 
 
     
-    renewTTL: function(creep) {
-        
+    renewTTL: function(creep) { //RENEW TTL IS DISABLED UNTIL RENEWING IS BETTER THAN SPAWNING
+        /* 
         var homeSpawn = Game.getObjectById(creep.memory.homeSpawnID)
+        var numOfBlocks = Math.floor(homeSpawn.room.energyCapacityAvailable / 250)
         
-        if(creep.hits > 1499) {
+        if(creep.hits > (numOfBlocks * 249) && creep.hits > 1400) {
             if(creep.ticksToLive < 100 || creep.memory.renewing) {
-                console.log(creep.cancelOrder('move'))
                 creep.memory.renewing = true
+                creep.cancelOrder('move');
                 if(homeSpawn.renewCreep(creep) == ERR_NOT_IN_RANGE) {
-                    creep.moveTo(homeSpawn)
+                    creep.moveTo(homeSpawn);
                 }
             }
         }
         if(creep.ticksToLive > 1400) {
             creep.memory.renewing = false
         }
+        */
     }
 };
 
