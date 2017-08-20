@@ -11,12 +11,14 @@
         
  */
 
+
     //Module Imports
 var roomSpawn = require('room.spawn');
 var roomImprove = require('room.improve');
+
 var creepsRole = require('creeps.role');
 
-module.exports.loop = function () {
+module.exports.loop = function (){
 
     //Log Whitespace ( ＾∇＾)
         console.log(' ');
@@ -68,7 +70,7 @@ module.exports.loop = function () {
             }
             else if(closestDamagedStructure) {
                 tower.repair(closestDamagedStructure);
-            }  
+            }
         }
     }
 
@@ -95,9 +97,9 @@ module.exports.loop = function () {
         if(creep.memory.role == 'grunt') {
             creepsRole.runGrunt(creep);
         }
+        if(creep.memory.role == 'police') {
+            creepsRole.runPolice(creep);
+        }
     }
-    
-    
-    
     
 }

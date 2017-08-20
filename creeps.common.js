@@ -34,11 +34,11 @@ var creepsCommon = {
             }
         }
         else {
-            var sources = creep.room.find(FIND_DROPPED_ENERGY);
-            if(sources.length > 0) {
-                sources.sort((b,a) => a.amount - b.amount)
-                if(creep.pickup(sources[0]) == ERR_NOT_IN_RANGE) {
-                    creep.moveTo(sources[0], [5,,])
+            var resources = creep.room.find(FIND_DROPPED_ENERGY);
+            if(resources.length > 0) {
+                resources.sort((b,a) => a.amount - b.amount)
+                if(creep.pickup(resources[0]) == ERR_NOT_IN_RANGE) {
+                    creep.moveTo(resources[0], [5,,])
                 }
             }
         }
@@ -60,7 +60,6 @@ var creepsCommon = {
                 }
             }
         }
-        
         if(creep.ticksToLive > 1400) {
             creep.memory.renewing = false
         }

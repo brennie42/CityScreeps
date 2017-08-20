@@ -22,6 +22,10 @@ var roomSpawn = {
             spawn.room.memory.numOfSources = spawn.room.find(FIND_SOURCES).length
         }
         
+        if(!spawn.room.memory.numOfLairs) {
+            spawn.room.memory.numOfLairs = spawn.room.find(FIND_STRUCTURES, {filter: (other) => other.structureType == STRUCTURE_KEEPER_LAIR}).length
+        }
+        
 //Check Number of Various types of creeps and set Target Population
         
     //Harvester 
@@ -104,7 +108,12 @@ var roomSpawn = {
          console.log('Grunts at ' + spawn.room.name + ': ' + gruntInfo[2].length + '/' + gruntInfo[1]);  
     
     //Police
-        var policeInfo = [0]
+        var policeInfo = []
+        policeInfo[0] = 'police'
+        policeInfo[1] = (1 + spawn.room.memory.numOfLairs)
+        policeInfo[2] = _.filter(Game.creeps, (creep) => creep.memory.role == 'police');
+         console.log('Police at ' + spawn.room.name + ': ' + policeInfo[2].length + '/' + policeInfo[1]);
+        
         
         
         
@@ -161,6 +170,12 @@ var roomSpawn = {
             gruntInfo[3].push(TOUGH,TOUGH,MOVE,MOVE,MOVE,ATTACK)
         }
         
+    //Police
+        policeInfo[3] = []
+        for(i = 0; i < Math.ceil(numOfBlocks / 2); i++) {
+            policeInfo[3].push(TOUGH,TOUGH,MOVE,MOVE,RANGED_ATTACK)
+        }
+        
 // Define active creep types AND THE PRIORITY ORDER OF SPAWN (top is first)
         var roleInfo = [
             gathererInfo,
@@ -169,7 +184,8 @@ var roomSpawn = {
             fixerInfo,
             builderInfo,
             upgraderInfo,
-            gruntInfo
+            gruntInfo,
+            policeInfo
         ]
 // Keep numbers constant for various creep types
 
@@ -188,73 +204,6 @@ var roomSpawn = {
                 console.log('Spawning new ' + activeInfo[0] + ': ' + newName);
             }
         }
-        
-       /* 
-        if(gatherers.length < gathererNum) {
-            var newMoniker = 'Gatherer' + Math.floor((Math.random() * 8999) + 1000)
-            var newName = spawn.createCreep(
-                gathererBody,
-                newMoniker,
-                {dedTime: 0, role: 'gatherer'}
-            );
-            console.log('Spawning new gatherer: ' + newName);
-        }
-        else if(harvesters.length < harvesterNum) {
-            var newMoniker = 'Harvester' + Math.floor((Math.random() * 8999) + 1000)
-            var newName = spawn.createCreep(
-                harvesterBody,
-                newMoniker,
-                {dedTime: 0, role: 'harvester'}
-            );
-            console.log('Spawning new harvester: ' + newName);
-        }
-        else if(distributors.length < distributorNum) {
-            var newMoniker = 'Distributor' + Math.floor((Math.random() * 8999) + 1000)
-            var newName = spawn.createCreep(
-                distributorBody,
-                newMoniker,
-                {dedTime: 0, role: 'distributor'}
-            );
-            console.log('Spawning new distributor: ' + newName);
-        }
-        else if(fixers.length < fixerNum) {
-            var newMoniker = 'Fixer' + Math.floor((Math.random() * 8999) + 1000)
-            var newName = spawn.createCreep(
-                fixerBody,
-                newMoniker,
-                {dedTime: 0, role: 'fixer'}
-            );
-            console.log('Spawning new fixer: ' + newName);
-        }
-        else if(builders.length < builderNum) {
-            var newMoniker = 'Builder' + Math.floor((Math.random() * 8999) + 1000)
-            var newName = spawn.createCreep(
-                builderBody,
-                newMoniker,
-                {dedTime: 0, role: 'builder'}
-            );
-            console.log('Spawning new builder: ' + newName);
-        }
-        else if(upgraders.length < upgraders.num) {
-            var newMoniker = 'Upgrader' + Math.floor((Math.random() * 8999) + 1000)
-            var newName = spawn.createCreep(
-                upgraderBody,
-                newMoniker,
-                {dedTime: 0, role: 'upgrader'}
-            );
-            console.log('Spawning new upgrader: ' + newName);
-        }
-        else if(grunts.length < gruntNum) {
-            var newMoniker = 'Grunt' + Math.floor((Math.random() * 8999) + 1000)
-            var newName = spawn.createCreep(
-                gruntBody,
-                newMoniker,
-                {dedTime: 0, role: 'grunt'}
-            );
-            console.log('Spawning new grunt: ' + newName);
-        }
-        
-        */
     },
 
 
@@ -262,8 +211,52 @@ var roomSpawn = {
 
     planImprovement: function(spawn) {
         
+        /*
+            Spawn complex plan:
+            
+                    RERERER
+                    ERERERE
+                    RERCRER
+                    ERCSCRE
+                    RERCRER
+                    ERERERE
+                    RERERER
+                
+                KEY:
+                    R: Road
+                    E: Extension
+                    C: Container
+                    S: Spawn
+                    
+                All coordinates based off of SPAWN
+            
+            Auxillary complex plan:
+            
+                    ERERERERE
+                    RERERERER
+                    ERERERERE
+                    RERERERER
+                    ERERSRERE
+                    RERERERER
+                    ERERERERE
+                    RERERERER
+                    ERERERERE
+                
+                KEY:
+                    R: Road
+                    E: Extension
+                    S: Storage
+                
+                All coordinates base off of STORAGE
+        */
+        
+        
+        
         if(!spawn.room.memory.levelPlanned) {
             spawn.room.memory.levelPlanned = 0;
+        }
+        if(!spawn.room.memory.auxillaryPlanned) {
+            spawn.room.memory.auxillaryPlanned = 0;
         }
         
         if(spawn.room.controller.level == 1 && spawn.room.memory.levelPlanned == 0) {
@@ -332,9 +325,34 @@ var roomSpawn = {
             spawn.room.memory.levelPlanned = 3;
         }
         
-        if(spawn.room.controller.level == 4 && spawn.room.memory.levelPlanned == 2) {
+        if(spawn.room.controller.level == 4 && spawn.room.memory.levelPlanned == 3) {
+            //Create Sites for the Third layer of core extensions
+            spawn.room.createConstructionSite((spawn.pos.x - 0), (spawn.pos.y + 3), STRUCTURE_EXTENSION);
+            spawn.room.createConstructionSite((spawn.pos.x - 1), (spawn.pos.y + 2), STRUCTURE_EXTENSION);
+            spawn.room.createConstructionSite((spawn.pos.x - 2), (spawn.pos.y + 3), STRUCTURE_EXTENSION);
+            spawn.room.createConstructionSite((spawn.pos.x - 3), (spawn.pos.y + 2), STRUCTURE_EXTENSION);
+            spawn.room.createConstructionSite((spawn.pos.x - 2), (spawn.pos.y + 1), STRUCTURE_EXTENSION);
             
+            spawn.room.createConstructionSite((spawn.pos.x - 3), (spawn.pos.y - 0), STRUCTURE_EXTENSION);
+            spawn.room.createConstructionSite((spawn.pos.x - 2), (spawn.pos.y - 1), STRUCTURE_EXTENSION);
+            spawn.room.createConstructionSite((spawn.pos.x - 3), (spawn.pos.y - 2), STRUCTURE_EXTENSION);
+            spawn.room.createConstructionSite((spawn.pos.x - 2), (spawn.pos.y - 3), STRUCTURE_EXTENSION);
+            spawn.room.createConstructionSite((spawn.pos.x - 1), (spawn.pos.y - 2), STRUCTURE_EXTENSION);
+            
+            //Set memory to Done
+            spawn.room.memory.levelPlanned = 4;
         }
+        /*
+        if(spawn.room.controller.level >= 4 && spawn.room.memory.auxillaryPlanned == 0) {
+            //Find location for auxillary complex
+            if(!spawn.memory.auxSearchIndex) {
+                spawn.memory.auxSearchIndex = 0
+            }
+            auxSearchFlag = spawn.room.find()
+            if()
+            spawn.room.createFlag()
+        }
+        */
     }
 };
 
